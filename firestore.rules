@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ---------- Perfiles de usuario ----------
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      // Al registrarse, nadie puede crearse a sí mismo como admin
+      allow create: if isOwner(uid) && request.resource.data.role == 'customer';
+      // Puede editar su perfil, pero nunca cambiar su propio rol
+      allow update: if isOwner(uid) && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+  }
+}
