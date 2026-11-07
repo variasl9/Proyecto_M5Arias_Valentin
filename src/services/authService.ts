@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -52,10 +53,10 @@ export async function register(
   email: string,
   password: string,
   displayName: string,
-): Promise<void> {
+): Promise<UserProfile> {
   const { user } = await createUserWithEmailAndPassword(auth, email, password)
   await updateProfile(user, { displayName })
-  await ensureUserProfile(user, displayName)
+  return ensureUserProfile(user, displayName)
 }
 
 export async function login(email: string, password: string): Promise<void> {
@@ -70,4 +71,9 @@ export async function loginWithGoogle(): Promise<void> {
 
 export async function logout(): Promise<void> {
   await signOut(auth)
+}
+
+/** Escucha los cambios de sesión. Devuelve la función para dejar de escuchar. */
+export function onAuthChange(callback: (user: User | null) => void) {
+  return onAuthStateChanged(auth, callback)
 }
