@@ -1,9 +1,36 @@
-   function App() {
-     return (
-       <h1 className="p-4 text-2xl font-bold text-indigo-600">
-         Patagonix Store 🚀
-       </h1>
-     )
-   }
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { MainLayout } from './components/layout/MainLayout'
+import { AdminRoute } from './components/routes/AdminRoute'
+import { ProtectedRoute } from './components/routes/ProtectedRoute'
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { HomePage } from './pages/HomePage'
+import { LoginPage } from './pages/LoginPage'
+import { OrdersPage } from './pages/OrdersPage'
+import { RegisterPage } from './pages/RegisterPage'
 
-   export default App
+function App() {
+  return (
+    <Routes>
+      <Route element={<MainLayout />}>
+        {/* Públicas */}
+        <Route index element={<HomePage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
+
+        {/* Requieren sesión */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="orders" element={<OrdersPage />} />
+        </Route>
+
+        {/* Requieren rol admin (en la Fase 6 tendrán su propio layout) */}
+        <Route path="admin" element={<AdminRoute />}>
+          <Route index element={<AdminDashboardPage />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  )
+}
+
+export default App
