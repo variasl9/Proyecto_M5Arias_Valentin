@@ -15,14 +15,31 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function isValidProduct(p) {
+      return p.name is string && p.name.size() > 0
+        && p.nameLower == p.name.lower()
+        && p.description is string
+        && p.price is number && p.price > 0
+        && p.stock is int && p.stock >= 0
+        && p.category is string && p.category.size() > 0
+        && p.imageUrl is string;
+    }
+
     // ---------- Perfiles de usuario ----------
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-      // Al registrarse, nadie puede crearse a sí mismo como admin
       allow create: if isOwner(uid) && request.resource.data.role == 'customer';
-      // Puede editar su perfil, pero nunca cambiar su propio rol
       allow update: if isOwner(uid) && request.resource.data.role == resource.data.role;
       allow delete: if false;
+    }
+
+    // ---------- Productos ----------
+    match /products/{productId} {
+      // El catálogo es público: cualquiera puede verlo, incluso sin sesión
+      allow read: if true;
+      // Solo el admin escribe, y los datos tienen que tener la forma correcta
+      allow create, update: if isAdmin() && isValidProduct(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }

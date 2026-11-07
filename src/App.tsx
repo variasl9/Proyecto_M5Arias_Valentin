@@ -6,6 +6,7 @@ import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { OrdersPage } from './pages/OrdersPage'
+import { ProductDetailPage } from './pages/ProductDetailPage'
 import { RegisterPage } from './pages/RegisterPage'
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
       <Route element={<MainLayout />}>
         {/* Públicas */}
         <Route index element={<HomePage />} />
+        <Route path="products/:id" element={<ProductDetailPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
 
