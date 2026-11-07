@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { AddToCart } from '../components/products/AddToCart'
 import { Alert } from '../components/ui/Alert'
 import { EmptyState } from '../components/ui/EmptyState'
 import { FullPageSpinner } from '../components/ui/Spinner'
@@ -50,7 +51,7 @@ export function ProductDetailPage() {
             {outOfStock ? 'Sin stock' : `${product.stock} unidades disponibles`}
           </p>
 
-          {/* El botón "Agregar al carrito" llega en la Fase 4 */}
+          <AddToCart product={product} />
         </div>
       </div>
     </article>

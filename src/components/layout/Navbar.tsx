@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useCart } from '../../hooks/useCart'
 import { Button } from '../ui/Button'
 
 function linkClass({ isActive }: { isActive: boolean }) {
@@ -10,6 +11,7 @@ function linkClass({ isActive }: { isActive: boolean }) {
 
 export function Navbar() {
   const { status, profile, isAdmin, logout } = useAuth()
+  const { totalItems } = useCart()
 
   return (
     <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
@@ -21,6 +23,21 @@ export function Navbar() {
         <div className="flex flex-wrap items-center gap-1">
           <NavLink to="/" end className={linkClass}>
             Catálogo
+          </NavLink>
+
+          <NavLink
+            to="/cart"
+            className={linkClass}
+            aria-label={`Carrito, ${totalItems} productos`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              Carrito
+              {totalItems > 0 && (
+                <span className="min-w-5 rounded-full bg-indigo-600 px-1.5 text-center text-xs font-bold text-white">
+                  {totalItems}
+                </span>
+              )}
+            </span>
           </NavLink>
 
           {status === 'authenticated' && (

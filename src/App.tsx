@@ -3,6 +3,7 @@ import { MainLayout } from './components/layout/MainLayout'
 import { AdminRoute } from './components/routes/AdminRoute'
 import { ProtectedRoute } from './components/routes/ProtectedRoute'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { CartPage } from './pages/CartPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { OrdersPage } from './pages/OrdersPage'
@@ -16,6 +17,7 @@ function App() {
         {/* Públicas */}
         <Route index element={<HomePage />} />
         <Route path="products/:id" element={<ProductDetailPage />} />
+        <Route path="cart" element={<CartPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
 

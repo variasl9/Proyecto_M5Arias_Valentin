@@ -35,11 +35,18 @@ service cloud.firestore {
 
     // ---------- Productos ----------
     match /products/{productId} {
-      // El catálogo es público: cualquiera puede verlo, incluso sin sesión
       allow read: if true;
-      // Solo el admin escribe, y los datos tienen que tener la forma correcta
       allow create, update: if isAdmin() && isValidProduct(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    // ---------- Carritos (uno por usuario, el ID del documento es su UID) ----------
+    match /carts/{uid} {
+      // Cada usuario solo ve y modifica SU carrito
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.items is list
+        && request.resource.data.items.size() <= 50;
     }
   }
 }

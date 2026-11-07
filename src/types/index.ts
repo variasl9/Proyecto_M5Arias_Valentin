@@ -33,6 +33,7 @@ export interface CartItem {
   name: string
   price: number
   imageUrl: string
+  stock: number // stock al momento de agregarlo, para limitar la cantidad
   quantity: number
 }
 
