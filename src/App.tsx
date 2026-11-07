@@ -1,8 +1,11 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { AdminLayout } from './components/layout/AdminLayout'
 import { MainLayout } from './components/layout/MainLayout'
 import { AdminRoute } from './components/routes/AdminRoute'
 import { ProtectedRoute } from './components/routes/ProtectedRoute'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
+import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { CartPage } from './pages/CartPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { HomePage } from './pages/HomePage'
@@ -15,6 +18,7 @@ import { RegisterPage } from './pages/RegisterPage'
 function App() {
   return (
     <Routes>
+      {/* ===== Tienda (layout del cliente) ===== */}
       <Route element={<MainLayout />}>
         {/* Públicas */}
         <Route index element={<HomePage />} />
@@ -30,12 +34,16 @@ function App() {
           <Route path="orders/:id" element={<OrderDetailPage />} />
         </Route>
 
-        {/* Requieren rol admin (en la Fase 6 tendrán su propio layout) */}
-        <Route path="admin" element={<AdminRoute />}>
-          <Route index element={<AdminDashboardPage />} />
-        </Route>
-
         <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+
+      {/* ===== Panel de administración (layout propio) ===== */}
+      <Route path="admin" element={<AdminRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
+          <Route path="orders" element={<AdminOrdersPage />} />
+        </Route>
       </Route>
     </Routes>
   )
