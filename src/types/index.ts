@@ -40,14 +40,32 @@ export interface CartItem {
 /* ---------- Órdenes ---------- */
 export type OrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled'
 
+// Un ítem de orden es una "foto" del producto al momento de la compra
+export type OrderItem = Omit<CartItem, 'stock'>
+
+export interface ShippingInfo {
+  fullName: string
+  address: string
+  city: string
+  postalCode: string
+  phone: string
+}
+
+export interface PaymentInfo {
+  method: 'card'
+  last4: string // nunca guardamos el número completo
+  status: 'approved'
+}
+
 export interface Order {
   id: string
   userId: string
   userEmail: string
-  items: CartItem[]
+  items: OrderItem[]
+  shipping: ShippingInfo
+  payment: PaymentInfo
   total: number
   status: OrderStatus
   createdAt: Timestamp
+  updatedAt?: Timestamp
 }
-
-export type OrderInput = Omit<Order, 'id' | 'createdAt'>
