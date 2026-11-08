@@ -5,6 +5,7 @@ import { AdminRoute } from './components/routes/AdminRoute'
 import { ProtectedRoute } from './components/routes/ProtectedRoute'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
+import { AdminEditProductPage, AdminNewProductPage } from './pages/admin/AdminProductFormPage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 import { CartPage } from './pages/CartPage'
 import { CheckoutPage } from './pages/CheckoutPage'
@@ -42,6 +43,8 @@ function App() {
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
           <Route path="products" element={<AdminProductsPage />} />
+          <Route path="products/new" element={<AdminNewProductPage />} />
+          <Route path="products/:id/edit" element={<AdminEditProductPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
         </Route>
       </Route>

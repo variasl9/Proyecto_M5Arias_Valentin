@@ -32,15 +32,20 @@ export async function uploadProductImage(file: File): Promise<string> {
 
   const token = await user.getIdToken()
 
-  // Paso 1: pedir la URL firmada
-  const response = await fetch('/api/upload-url', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ contentType: file.type, size: file.size }),
-  })
+  // Paso 1: pedir la URL firmada a nuestra función
+  let response: Response
+  try {
+    response = await fetch('/api/upload-url', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ contentType: file.type, size: file.size }),
+    })
+  } catch {
+    throw new AppError('No pudimos contactar al servidor. Revisá tu conexión.')
+  }
 
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null
@@ -50,14 +55,20 @@ export async function uploadProductImage(file: File): Promise<string> {
   const { uploadUrl, publicUrl } = (await response.json()) as UploadUrlResponse
 
   // Paso 2: subir el archivo directo a S3
-  const upload = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  })
+  let upload: Response
+  try {
+    upload = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    })
+  } catch {
+    // fetch solo rechaza por errores de red o de CORS
+    throw new AppError('No se pudo subir la imagen a S3. Revisá la configuración de CORS del bucket.')
+  }
 
   if (!upload.ok) {
-    throw new AppError('No se pudo subir la imagen. Intentá de nuevo.')
+    throw new AppError('S3 rechazó la imagen. Intentá de nuevo.')
   }
 
   return publicUrl
