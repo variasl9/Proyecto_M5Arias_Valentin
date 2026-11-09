@@ -10,5 +10,21 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: false,
+    // Cada test arranca con los mocks limpios: así el orden de los tests no importa
+    mockReset: true,
+    restoreMocks: true,
+    unstubGlobals: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}', 'api/**/*.ts'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        'src/main.tsx',
+        'src/env.d.ts',
+        'api/_tests/**',
+      ],
+      reporter: ['text', 'html'],
+    },
   },
 })
