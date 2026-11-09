@@ -5,6 +5,38 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rolldownOptions: {
+      output: {
+        // Librerías en archivos propios: cambian poco y el navegador las reutiliza de la caché
+        codeSplitting: {
+          groups: [
+            // Firebase separado en partes: se descargan en paralelo
+            {
+              name: 'firebase-auth',
+              test: /[\\/]node_modules[\\/]@firebase[\\/]auth[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'firebase-firestore',
+              test: /[\\/]node_modules[\\/]@firebase[\\/]firestore[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'firebase-core',
+              test: /[\\/]node_modules[\\/](@firebase|firebase)[\\/]/,
+              priority: 10,
+            },
+            {
+              name: 'react-vendor',
+              test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

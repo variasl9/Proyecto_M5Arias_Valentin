@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { FullPageSpinner } from '../ui/Spinner'
 
 const ADMIN_LINKS = [
   { to: '/admin', label: 'Resumen', end: true },
@@ -54,7 +56,10 @@ export function AdminLayout() {
 
       <main className="flex-1 px-4 py-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
-          <Outlet />
+          {/* La barra lateral queda visible mientras se descarga una página del panel */}
+          <Suspense fallback={<FullPageSpinner />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>
