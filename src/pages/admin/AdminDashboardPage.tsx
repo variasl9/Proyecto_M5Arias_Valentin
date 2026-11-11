@@ -1,10 +1,19 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { OrdersByStatus } from '../../components/admin/OrdersByStatus'
+import { SalesChart } from '../../components/admin/SalesChart'
+import { TopProductsList } from '../../components/admin/TopProductsList'
 import { Alert } from '../../components/ui/Alert'
 import { Button } from '../../components/ui/Button'
-import { Spinner } from '../../components/ui/Spinner'
+import { FullPageSpinner } from '../../components/ui/Spinner'
 import { useAllOrders } from '../../hooks/useAllOrders'
 import { seedProducts } from '../../services/seedService'
+import {
+  getDailySales,
+  getOrdersByStatus,
+  getSalesSummary,
+  getTopProducts,
+} from '../../utils/analytics'
 import { getFirebaseErrorMessage } from '../../utils/firebaseErrors'
 import { formatPrice } from '../../utils/format'
 
@@ -18,7 +27,7 @@ function StatCard({ label, value, to }: StatCardProps) {
   const content = (
     <>
       <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+      <p className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">{value}</p>
     </>
   )
   const classes = 'rounded-xl border border-gray-200 bg-white p-4'
@@ -33,16 +42,16 @@ function StatCard({ label, value, to }: StatCardProps) {
 }
 
 export function AdminDashboardPage() {
-  const { orders, loading } = useAllOrders('')
+  const { orders, loading, error } = useAllOrders('')
+
+  // Se recalculan solo cuando cambian las órdenes, no en cada render
+  const summary = useMemo(() => getSalesSummary(orders), [orders])
+  const dailySales = useMemo(() => getDailySales(orders, 14), [orders])
+  const topProducts = useMemo(() => getTopProducts(orders, 5), [orders])
+  const ordersByStatus = useMemo(() => getOrdersByStatus(orders), [orders])
+
   const [seeding, setSeeding] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
-  const pending = orders.filter((o) => o.status === 'pending').length
-  const processing = orders.filter((o) => o.status === 'processing').length
-  // Ingresos: todo lo vendido, salvo lo cancelado
-  const revenue = orders
-    .filter((o) => o.status !== 'cancelled')
-    .reduce((sum, o) => sum + o.total, 0)
 
   async function handleSeed() {
     if (!window.confirm('¿Cargar productos de ejemplo en Firestore?')) return
@@ -51,8 +60,8 @@ export function AdminDashboardPage() {
     try {
       const count = await seedProducts()
       setMessage({ type: 'success', text: `Se cargaron ${count} productos de ejemplo.` })
-    } catch (error) {
-      setMessage({ type: 'error', text: getFirebaseErrorMessage(error) })
+    } catch (err) {
+      setMessage({ type: 'error', text: getFirebaseErrorMessage(err) })
     } finally {
       setSeeding(false)
     }
@@ -63,16 +72,27 @@ export function AdminDashboardPage() {
       <h1 className="text-2xl font-bold text-gray-900">Resumen</h1>
 
       {loading ? (
-        <div className="py-6 text-indigo-600">
-          <Spinner />
-        </div>
+        <FullPageSpinner />
+      ) : error ? (
+        <Alert>{error}</Alert>
       ) : (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Órdenes totales" value={orders.length} to="/admin/orders" />
-          <StatCard label="Pendientes" value={pending} to="/admin/orders" />
-          <StatCard label="En preparación" value={processing} to="/admin/orders" />
-          <StatCard label="Ingresos" value={formatPrice(revenue)} />
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatCard label="Órdenes totales" value={summary.totalOrders} to="/admin/orders" />
+            <StatCard label="Pendientes" value={summary.pending} to="/admin/orders" />
+            <StatCard label="Ingresos" value={formatPrice(summary.revenue)} />
+            <StatCard label="Ticket promedio" value={formatPrice(summary.averageTicket)} />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <SalesChart data={dailySales} />
+            </div>
+            <OrdersByStatus counts={ordersByStatus} />
+          </div>
+
+          <TopProductsList products={topProducts} />
+        </>
       )}
 
       {/* Herramienta de desarrollo: no aparece en el build de producción */}

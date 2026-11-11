@@ -51,9 +51,20 @@ La aplicación soporta dos tipos de usuarios:
 ### Administrador
 
 - Panel con **layout propio** (barra lateral oscura en escritorio, pestañas deslizables en celular).
-- **Resumen** con métricas: órdenes totales, pendientes, en preparación e ingresos.
+- **Dashboard de analytics** (crédito extra): métricas clave, gráfico de ventas de los últimos 14 días, órdenes por estado y ranking de productos más vendidos, todo en tiempo real.
 - **CRUD de productos** con subida de imágenes a **AWS S3** y vista previa local.
 - **Gestión de órdenes**: ver todas, filtrar por estado y cambiar el estado siguiendo un flujo permitido. Al cancelar, el stock se devuelve automáticamente.
+
+### ⭐ Crédito extra: dashboard de analytics
+
+El **Resumen** del panel admin muestra, en tiempo real (`onSnapshot`):
+
+- **Métricas clave:** órdenes totales, pendientes, ingresos y ticket promedio.
+- **Ventas de los últimos 14 días:** gráfico de barras con Recharts, con los días sin ventas en cero.
+- **Órdenes por estado:** distribución de pendientes, en preparación, completadas y canceladas.
+- **Productos más vendidos:** ranking por unidades, con sus ingresos.
+
+Todos los cálculos viven en funciones puras (`src/utils/analytics.ts`), testeadas con una fecha fija. Las órdenes canceladas no cuentan como ventas. Recharts solo se descarga al entrar al panel admin, gracias al code splitting.
 
 ### UI / UX
 
@@ -69,7 +80,7 @@ La aplicación soporta dos tipos de usuarios:
 
 | Capa | Tecnologías |
 |---|---|
-| **Frontend** | React 18, TypeScript, Vite, React Router, TailwindCSS, Context API + useReducer |
+| **Frontend** | React 18, TypeScript, Vite, React Router, TailwindCSS, Context API + useReducer, Recharts |
 | **Backend / BaaS** | Firebase Authentication, Cloud Firestore |
 | **Almacenamiento** | AWS S3 (presigned URLs) |
 | **Serverless** | Vercel Serverless Functions + Firebase Admin SDK + AWS SDK v3 |
@@ -372,7 +383,7 @@ npm run test:watch      # modo observación
 npm run test:coverage   # cobertura (reporte en coverage/index.html)
 ```
 
-**107 tests en 11 archivos**, deterministas y sin conexiones reales: Firebase, Firestore, el pago, `fetch` y el AWS SDK están mockeados.
+**Más de 110 tests en 12 archivos**, deterministas y sin conexiones reales: Firebase, Firestore, el pago, `fetch` y el AWS SDK están mockeados.
 
 | Tipo | Qué se testea |
 |---|---|
@@ -382,7 +393,7 @@ npm run test:coverage   # cobertura (reporte en coverage/index.html)
 | **Servicios** | Pago simulado (con timers falsos) y subida a S3 (con `fetch` mockeado) |
 | **Integración** | Flujo completo de compra sobre la `App` real: detalle → carrito → checkout → orden, más pago rechazado, formulario incompleto y falta de stock |
 | **Vercel Function** | Los 4 controles de seguridad con el AWS SDK y Firebase Admin mockeados |
-| **Lógica pura** | Validadores de formularios (con fecha fija) y transiciones de estado de órdenes |
+| **Lógica pura** | Validadores de formularios (con fecha fija), transiciones de estado de órdenes y cálculos del dashboard de analytics |
 
 **Wrapper de providers:** `src/test/test-utils.tsx` exporta `renderWithProviders`, que envuelve los componentes en `MemoryRouter`, `AuthContext` (con un estado de sesión fabricado a medida) y el `CartProvider` real.
 
@@ -406,6 +417,7 @@ Durante el desarrollo usé **Claude** como asistente para planificar la arquitec
 | 8 | Testing | *"Te paso mi cartReducer y mi función de upload. ¿Qué casos edge debería testear que no se me ocurrieron?"* | Surgieron casos que no había considerado: cantidades negativas, stock 0, fusión de carritos que supera el stock, verificar inmutabilidad con `Object.freeze`, y un `contentType` como `'toString'`, que engañaría a un objeto común de JavaScript. | Incorporé esos casos. El de `'toString'` confirmó que usar un `Map` en la función era la decisión correcta. |
 | 9 | Deploy | *"Vite me avisa que el bundle pesa más de 500 KB. ¿Cómo lo reduzco en una SPA con Firebase?"* | Code splitting por rutas con `React.lazy` y separación de librerías en archivos propios, para aprovechar la caché del navegador. | Lazy loading del panel admin y páginas secundarias (no del checkout, para no agregar un spinner antes de pagar). El código propio inicial bajó de 816 KB a 39 KB, sin subir el límite del aviso. |
 | 10 | Deploy | *"Después de agregar vercel.json, vercel dev falla con 'Failed to parse source' en index.html."* | La regla de reescritura de la SPA también capturaba los pedidos internos de Vite, que recibían HTML en vez de JavaScript. El error apuntaba al archivo equivocado. | Acoté la regla a rutas sin punto que no empiecen con `api/` ni `@`. |
+| 11 | Crédito extra | *"Quiero un dashboard de ventas con las órdenes de Firestore. ¿Dónde conviene calcular las métricas y cómo las testeo?"* | Si los cálculos viven dentro del componente, quedan mezclados con la UI y son difíciles de testear. Además, un gráfico por día tiene que mostrar los días **sin** ventas, o el eje engaña. | Separé los cálculos en funciones puras (`analytics.ts`) que reciben la fecha como parámetro, completé los días vacíos con cero, excluí las órdenes canceladas y usé `useMemo` para no recalcular en cada render. |
 
 **Reflexión general:** la IA me resultó más útil para **cuestionar decisiones** y encontrar problemas que no veía (condiciones de carrera, estados intermedios, límites de seguridad) que para generar código. Los mejores resultados vinieron de explicarle el contexto concreto y pedirle alternativas con sus ventajas y desventajas, para después elegir con criterio propio. También aprendí que hay que verificar cada propuesta: varias veces la causa real de un error estaba en la configuración del entorno (reglas sin publicar, permisos de Windows, el `vercel.json`) y no en el código.
 
@@ -416,7 +428,8 @@ Durante el desarrollo usé **Claude** como asistente para planificar la arquitec
 - **Búsqueda por prefijo:** "andes" no encuentra "Campera Andes Pro". Para búsqueda completa haría falta un servicio como Algolia o Typesense.
 - **Creación de órdenes desde el cliente:** está protegida por reglas, pero lo ideal sería moverla a una función del servidor con el Admin SDK.
 - **Imágenes huérfanas:** al eliminar un producto, su imagen queda en S3. Borrarla requeriría otra función con `s3:DeleteObject`; se dejó fuera para mantener el usuario IAM con el mínimo privilegio.
-- **Mejoras posibles:** paginación del catálogo con `limit()` y `startAfter()`, reviews y ratings, y gráficos de ventas en el panel admin.
+- **Analytics calculados en el navegador:** con muchas órdenes convendría precalcular las métricas en el servidor (por ejemplo, con un documento de totales que se actualice al crear cada orden).
+- **Mejoras posibles:** paginación del catálogo con `limit()` y `startAfter()`, y reviews y ratings.
 
 ---
 
